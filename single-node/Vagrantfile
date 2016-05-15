@@ -9,14 +9,40 @@ require 'yaml'
 Vagrant.require_version ">= 1.6.0"
 
 CLUSTER_IP="10.3.0.1"
-NODE_IP = "172.17.4.99"
+NODE_IP = "172.18.0.101"
 NODE_MEMORY_SIZE = 2048
 USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
 
-system("mkdir -p ssl && ./../lib/init-ssl-ca ssl") or abort ("failed generating SSL CA artifacts")
-system("./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}") or abort ("failed generating SSL certificate artifacts")
-system("./../lib/init-ssl ssl admin kube-admin") or abort("failed generating admin SSL artifacts")
+# Detect OS
+module OS
+  def OS.windows?
+    (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+  end
+
+  def OS.mac?
+   (/darwin/ =~ RUBY_PLATFORM) != nil
+  end
+
+  def OS.unix?
+    !OS.windows?
+  end
+
+  def OS.linux?
+    OS.unix? and not OS.mac?
+  end
+end
+
+if OS.windows?
+  system("\"C:\\Program Files\\Git\\git-bash.exe\" -c \"mkdir -p ssl && ./../lib/init-ssl-ca ssl\"") or abort ("failed generating SSL CA artifacts")
+  system("\"C:\\Program Files\\Git\\git-bash.exe\" -c \"./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}\"") or abort ("failed generating SSL certificate artifacts")
+  system("\"C:\\Program Files\\Git\\git-bash.exe\" -c \"./../lib/init-ssl ssl admin kube-admin\"") or abort("failed generating admin SSL artifacts")
+else
+  system("mkdir -p ssl && ./../lib/init-ssl-ca ssl") or abort ("failed generating SSL CA artifacts")
+  system("./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}") or abort ("failed generating SSL certificate artifacts")
+  system("./../lib/init-ssl ssl admin kube-admin") or abort("failed generating admin SSL artifacts")
+end
+
 
 Vagrant.configure("2") do |config|
   # always use Vagrant's insecure key

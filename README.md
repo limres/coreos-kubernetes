@@ -1,3 +1,8 @@
+# Michaels notes
+
+Fix rsync
+https://github.com/mitchellh/vagrant/issues/6702#issuecomment-166503021
+
 # Kubernetes on CoreOS
 
 This repo contains tooling and documentation around deploying Kubernetes using CoreOS.

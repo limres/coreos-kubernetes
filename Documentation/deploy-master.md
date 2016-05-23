@@ -34,7 +34,9 @@ $ sudo chown root:root /etc/kubernetes/ssl/*-key.pem
 ```
 
 ### Network Configuration
+
 Networking is provided by Flannel and Calico.
+
 * [flannel][flannel-docs] provides a software-defined overlay network for routing traffic to/from the [pods][pod-overview]
 * [Calico][calico-docs] secures the overlay network by restricting traffic to/from the pods based on fine-grained network policy.
 
@@ -95,8 +97,9 @@ Note that the kubelet running on a master node may log repeated attempts to post
 
 * Replace `${ADVERTISE_IP}` with this node's publicly routable IP.
 * Replace `${DNS_SERVICE_IP}`
-* Replace `${K8S_VER}` This will map to: `quay.io/coreos/hyperkube:${K8S_VER}` release. If using Calico a version that includes CNI binaries should be used. e.g. `v1.2.4_coreos_cni.0`
+* Replace `${K8S_VER}` This will map to: `quay.io/coreos/hyperkube:${K8S_VER}` release. If using Calico a version that includes CNI binaries should be used. e.g. `v1.2.4_coreos_cni.1`
 * Replace `${NETWORK_PLUGIN}` with `cni` if using Calico. Otherwise just leave it blank.
+* Decide if you will use [additional features][rkt-opts-examples] such as cluster logging, iSCSI volumes, or addressing workers by hostname in addition to IPs.
 
 **/etc/systemd/system/kubelet.service**
 
@@ -120,6 +123,8 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 ```
+
+[rkt-opts-examples]: kubelet-wrapper.md#customizing-rkt-options
 
 ### Set Up the kube-apiserver Pod
 
@@ -145,7 +150,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-apiserver
-    image: quay.io/coreos/hyperkube:v1.2.4_coreos.0
+    image: quay.io/coreos/hyperkube:v1.2.4_coreos.1
     command:
     - /hyperkube
     - apiserver
@@ -204,7 +209,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-proxy
-    image: quay.io/coreos/hyperkube:v1.2.4_coreos.0
+    image: quay.io/coreos/hyperkube:v1.2.4_coreos.1
     command:
     - /hyperkube
     - proxy
@@ -244,12 +249,12 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-controller-manager
-    image: quay.io/coreos/hyperkube:v1.2.4_coreos.0
+    image: quay.io/coreos/hyperkube:v1.2.4_coreos.1
     command:
     - /hyperkube
     - controller-manager
     - --master=http://127.0.0.1:8080
-    - --leader-elect=true 
+    - --leader-elect=true
     - --service-account-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
     - --root-ca-file=/etc/kubernetes/ssl/ca.pem
     livenessProbe:
@@ -293,7 +298,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-scheduler
-    image: quay.io/coreos/hyperkube:v1.2.4_coreos.0
+    image: quay.io/coreos/hyperkube:v1.2.4_coreos.1
     command:
     - /hyperkube
     - scheduler
@@ -363,10 +368,10 @@ When creating `/etc/kubernetes/manifests/policy-agent.yaml`:
 
 ```yaml
 apiVersion: v1
-kind: Pod 
+kind: Pod
 metadata:
   name: calico-policy-agent
-  namespace: calico-system 
+  namespace: calico-system
 spec:
   hostNetwork: true
   containers:
@@ -378,7 +383,7 @@ spec:
           value: "${ETCD_ENDPOINTS}"
         - name: K8S_API
           value: "http://127.0.0.1:8080"
-        - name: LEADER_ELECTION 
+        - name: LEADER_ELECTION
           value: "true"
     # Leader election container used by the policy agent.
     - name: leader-elector

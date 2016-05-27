@@ -13,6 +13,7 @@ NODE_IP = "172.18.0.101"
 NODE_MEMORY_SIZE = 2048
 USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
+INSECURE_REGISTRY = "lcr.lh"
 
 # Detect OS
 module OS
@@ -80,11 +81,11 @@ Vagrant.configure("2") do |config|
 
   config.vm.network :private_network, ip: NODE_IP
 
-  config.vm.synced_folder "./pod-storage", "/pod-storage",
-    type: "rsync",
-    rsync__auto: true,
-    rsync__verbose: true,
-    rsync__exclude: [".git/"]
+  rsync_folders = YAML.load_file './folders.yaml'
+
+  rsync_folders.each do |folder|
+    config.vm.synced_folder folder["path"], folder["hostPath"], type: "rsync", rsync__exclude: folder["exclude"], rsync__verbose: folder["verbose"]
+  end
 
   config.vm.provision :file, :source => SSL_TARBALL_PATH, :destination => "/tmp/ssl.tar"
   config.vm.provision :shell, :inline => "mkdir -p /etc/kubernetes/ssl && tar -C /etc/kubernetes/ssl -xf /tmp/ssl.tar", :privileged => true
@@ -94,9 +95,7 @@ Vagrant.configure("2") do |config|
 
   # add insecure registry for local container registry
   config.vm.provision :shell, :inline => "sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/", :privileged => true
-  config.vm.provision :shell, :inline => "sudo sed -e $\"/^ExecStart/ s/$/ --insecure-registry lcr.lh/\" -i /etc/systemd/system/docker.service", :privileged => true
+  config.vm.provision :shell, :inline => "sudo sed -e $\"/^ExecStart/ s/$/ --insecure-registry #{CLUSTER_IP}/\" -i /etc/systemd/system/docker.service", :privileged => true
   config.vm.provision :shell, :inline => "sudo systemctl daemon-reload", :privileged => true
   config.vm.provision :shell, :inline => "sudo systemctl restart docker", :privileged => true
 end
-
-#rsync --verbose --archive --delete -z --copy-links --chmod=ugo=rwX --no-perms --no-owner --no-group --rsync-path sudo rsync -e ssh -p 2200 -o ControlMaster=auto -o ControlPath=C:/Users/micha/AppData/Local/Temp/ssh.297 -o ControlPersist=10m -o StrictH ostKeyChecking=no -o IdentitiesOnly=true -o UserKnownHostsFile=/dev/null -i 'C:/Users/micha/.vagrant.d/insecure_private_key' - -exclude .vagrant/ /c/Users/micha/Projects/limres-coreos-kubernetes/single-node/ core@127.0.0.1:/vagrant

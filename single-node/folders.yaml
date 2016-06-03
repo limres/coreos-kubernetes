@@ -1,13 +1,13 @@
 ---
 - name: buycel-app
-  path: ~/Projects/jskoolaid/buycel-app
+  path: ~/Projects/jskoolaid/app.buycel.com
   hostPath: /mnt/host-storage/silverstripe
   verbose: true
   exclude:
     - .git
-- name: www
-  path: ~/Projects/www
-  hostPath: /mnt/host-storage/www
+- name: buycel-parser
+  path: ~/Projects/jskoolaid/parser.buycel.com
+  hostPath: /mnt/host-storage/node-script
   verbose: true
   exclude:
     - .git

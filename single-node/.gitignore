@@ -1,3 +1,4 @@
 .vagrant
+folders.yaml
 ssl/
 pod-storage/

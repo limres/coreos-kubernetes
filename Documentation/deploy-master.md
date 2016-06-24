@@ -97,7 +97,7 @@ Note that the kubelet running on a master node may log repeated attempts to post
 
 * Replace `${ADVERTISE_IP}` with this node's publicly routable IP.
 * Replace `${DNS_SERVICE_IP}`
-* Replace `${K8S_VER}` This will map to: `quay.io/coreos/hyperkube:${K8S_VER}` release. If using Calico a version that includes CNI binaries should be used. e.g. `v1.2.4_coreos_cni.1`
+* Replace `${K8S_VER}` This will map to: `quay.io/coreos/hyperkube:${K8S_VER}` release. If using Calico a version that includes CNI binaries should be used. e.g. `v1.2.4_coreos.cni.1`
 * Replace `${NETWORK_PLUGIN}` with `cni` if using Calico. Otherwise just leave it blank.
 * Decide if you will use [additional features][rkt-opts-examples] such as cluster logging, iSCSI volumes, or addressing workers by hostname in addition to IPs.
 
@@ -160,7 +160,7 @@ spec:
     - --service-cluster-ip-range=${SERVICE_IP_RANGE}
     - --secure-port=443
     - --advertise-address=${ADVERTISE_IP}
-    - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
+    - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota
     - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
     - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
     - --client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -313,13 +313,13 @@ spec:
       timeoutSeconds: 1
 ```
 
-### Set Up Calico Node Container
+### Set Up Calico Node Container (optional)
+
+This step can be skipped if you do not wish to provide network policy to your cluster using Calico.
 
 The Calico node container runs on all hosts, including the master node. It performs two functions:
 * Connects containers to the flannel overlay network, which enables the "one IP per pod" concept.
 * Enforces network policy created through the Kubernetes policy API, ensuring pods talk to authorized resources only.
-
-This step can be skipped if not using Calico.
 
 When creating `/etc/systemd/system/calico-node.service`:
 
@@ -356,9 +356,11 @@ TimeoutStartSec=0
 WantedBy=multi-user.target
 ```
 
-### Set Up the policy-agent Pod
+### Set Up the policy-agent Pod (optional)
 
-The policy agent is the last major piece of the master node. It monitors the API for changes related to network policy and configures Calico to implement that policy. This step can be skipped if not using Calico.
+This step can be skipped if you do not wish to provide network policy to your cluster using Calico.
+
+The policy agent is the last major piece of the master node. It monitors the API for changes related to network policy and configures Calico to implement that policy. 
 
 When creating `/etc/kubernetes/manifests/policy-agent.yaml`:
 
@@ -395,7 +397,10 @@ spec:
         - "--http=127.0.0.1:4040"
 ```
 
-### Set Up the CNI config
+### Set Up the CNI config (optional)
+
+This step can be skipped if you do not wish to provide network policy to your cluster using Calico.
+
 The kubelet reads the CNI configuration on startup and uses that to determine which CNI plugin to call. Create the following file which tells the kubelet to call the flannel plugin but to then delegate control to the Calico plugin. Using the flannel plugin ensures that the Calico plugin is called with the IP range for the host that was selected by flannel.
 
 * Replace `${ADVERTISE_IP}` with this node's publicly routable IP.
@@ -460,7 +465,9 @@ $ sudo systemctl enable kubelet
 Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service to /etc/systemd/system/kubelet.service.
 ```
 
-### Start Calico
+### Start Calico (optional)
+
+This step can be skipped if you do not wish to provide network policy to your cluster using Calico.
 
 Start Calico if you configured your kubelet to use CNI plugins earlier:
 

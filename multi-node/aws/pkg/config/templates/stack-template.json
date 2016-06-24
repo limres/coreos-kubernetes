@@ -103,7 +103,11 @@
     "ExternalDNS": {
       "Type": "AWS::Route53::RecordSet",
       "Properties": {
+	{{ if .HostedZoneID }}
+        "HostedZoneId": "{{.HostedZoneID}}",
+	{{else}}
         "HostedZoneName": "{{.HostedZone}}",
+	{{ end }}
         "Name": "{{.ExternalDNSName}}",
         "TTL": {{.RecordSetTTL}},
         "ResourceRecords": [{ "Ref": "EIPController"}],
@@ -222,6 +226,19 @@
                   "Action" : "kms:Decrypt",
                   "Effect" : "Allow",
                   "Resource" : "{{.KMSKeyARN}}"
+                },
+                {
+                  "Action": [
+                    "ecr:GetAuthorizationToken",
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:GetRepositoryPolicy",
+                    "ecr:DescribeRepositories",
+                    "ecr:ListImages",
+                    "ecr:BatchGetImage"
+                  ],
+                  "Resource": "*",
+                  "Effect": "Allow"
                 }
               ],
               "Version": "2012-10-17"
@@ -315,6 +332,12 @@
         "SecurityGroupEgress": [
           {
             "CidrIp": "0.0.0.0/0",
+            "FromPort": -1,
+            "IpProtocol": "icmp",
+            "ToPort": -1
+          },
+          {
+            "CidrIp": "0.0.0.0/0",
             "FromPort": 0,
             "IpProtocol": "tcp",
             "ToPort": 65535
@@ -329,7 +352,7 @@
         "SecurityGroupIngress": [
           {
             "CidrIp": "0.0.0.0/0",
-            "FromPort": 3,
+            "FromPort": -1,
             "IpProtocol": "icmp",
             "ToPort": -1
           },
@@ -378,6 +401,12 @@
         "SecurityGroupEgress": [
           {
             "CidrIp": "0.0.0.0/0",
+            "FromPort": -1,
+            "IpProtocol": "icmp",
+            "ToPort": -1
+          },
+          {
+            "CidrIp": "0.0.0.0/0",
             "FromPort": 0,
             "IpProtocol": "tcp",
             "ToPort": 65535
@@ -392,7 +421,7 @@
         "SecurityGroupIngress": [
           {
             "CidrIp": "0.0.0.0/0",
-            "FromPort": 3,
+            "FromPort": -1,
             "IpProtocol": "icmp",
             "ToPort": -1
           },
@@ -615,7 +644,7 @@
     ,
     "{{$subnetLogicalName}}RouteTableAssociation": {
       "Properties": {
-        "RouteTableId": "{{.RouteTableID}}",
+        "RouteTableId": "{{$.RouteTableID}}",
         "SubnetId": {
           "Ref": "{{$subnetLogicalName}}"
         }

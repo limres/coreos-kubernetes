@@ -30,7 +30,7 @@ const (
 func newDefaultCluster() *Cluster {
 	return &Cluster{
 		ClusterName:              "kubernetes",
-		ReleaseChannel:           "alpha",
+		ReleaseChannel:           "stable",
 		VPCCIDR:                  "10.0.0.0/16",
 		ControllerIP:             "10.0.0.50",
 		PodCIDR:                  "10.2.0.0/16",
@@ -79,6 +79,8 @@ func ClusterFromBytes(data []byte) (*Cluster, error) {
 		c.InstanceCIDR = "10.0.0.0/24"
 	}
 
+	c.HostedZoneID = withHostedZoneIDPrefix(c.HostedZoneID)
+
 	if err := c.valid(); err != nil {
 		return nil, fmt.Errorf("invalid cluster: %v", err)
 	}
@@ -96,40 +98,41 @@ func ClusterFromBytes(data []byte) (*Cluster, error) {
 }
 
 type Cluster struct {
-	ClusterName              string            `yaml:"clusterName"`
-	ExternalDNSName          string            `yaml:"externalDNSName"`
-	KeyName                  string            `yaml:"keyName"`
-	Region                   string            `yaml:"region"`
-	AvailabilityZone         string            `yaml:"availabilityZone"`
-	ReleaseChannel           string            `yaml:"releaseChannel"`
-	ControllerInstanceType   string            `yaml:"controllerInstanceType"`
-	ControllerRootVolumeSize int               `yaml:"controllerRootVolumeSize"`
-	WorkerCount              int               `yaml:"workerCount"`
-	WorkerInstanceType       string            `yaml:"workerInstanceType"`
-	WorkerRootVolumeSize     int               `yaml:"workerRootVolumeSize"`
-	WorkerSpotPrice          string            `yaml:"workerSpotPrice"`
-	VPCID                    string            `yaml:"vpcId"`
-	RouteTableID             string            `yaml:"routeTableId"`
-	VPCCIDR                  string            `yaml:"vpcCIDR"`
-	InstanceCIDR             string            `yaml:"instanceCIDR"`
-	ControllerIP             string            `yaml:"controllerIP"`
-	PodCIDR                  string            `yaml:"podCIDR"`
-	ServiceCIDR              string            `yaml:"serviceCIDR"`
-	DNSServiceIP             string            `yaml:"dnsServiceIP"`
-	K8sVer                   string            `yaml:"kubernetesVersion"`
-	HyperkubeImageRepo       string            `yaml:"hyperkubeImageRepo"`
-	KMSKeyARN                string            `yaml:"kmsKeyArn"`
-	CreateRecordSet          bool              `yaml:"createRecordSet"`
-	RecordSetTTL             int               `yaml:"recordSetTTL"`
-	HostedZone               string            `yaml:"hostedZone"`
-	StackTags                map[string]string `yaml:"stackTags"`
-	UseCalico                bool              `yaml:"useCalico"`
-	Subnets                  []Subnet          `yaml:"subnets"`
+	ClusterName              string            `yaml:"clusterName,omitempty"`
+	ExternalDNSName          string            `yaml:"externalDNSName,omitempty"`
+	KeyName                  string            `yaml:"keyName,omitempty"`
+	Region                   string            `yaml:"region,omitempty"`
+	AvailabilityZone         string            `yaml:"availabilityZone,omitempty"`
+	ReleaseChannel           string            `yaml:"releaseChannel,omitempty"`
+	ControllerInstanceType   string            `yaml:"controllerInstanceType,omitempty"`
+	ControllerRootVolumeSize int               `yaml:"controllerRootVolumeSize,omitempty"`
+	WorkerCount              int               `yaml:"workerCount,omitempty"`
+	WorkerInstanceType       string            `yaml:"workerInstanceType,omitempty"`
+	WorkerRootVolumeSize     int               `yaml:"workerRootVolumeSize,omitempty"`
+	WorkerSpotPrice          string            `yaml:"workerSpotPrice,omitempty"`
+	VPCID                    string            `yaml:"vpcId,omitempty"`
+	RouteTableID             string            `yaml:"routeTableId,omitempty"`
+	VPCCIDR                  string            `yaml:"vpcCIDR,omitempty"`
+	InstanceCIDR             string            `yaml:"instanceCIDR,omitempty"`
+	ControllerIP             string            `yaml:"controllerIP,omitempty"`
+	PodCIDR                  string            `yaml:"podCIDR,omitempty"`
+	ServiceCIDR              string            `yaml:"serviceCIDR,omitempty"`
+	DNSServiceIP             string            `yaml:"dnsServiceIP,omitempty"`
+	K8sVer                   string            `yaml:"kubernetesVersion,omitempty"`
+	HyperkubeImageRepo       string            `yaml:"hyperkubeImageRepo,omitempty"`
+	KMSKeyARN                string            `yaml:"kmsKeyArn,omitempty"`
+	CreateRecordSet          bool              `yaml:"createRecordSet,omitempty"`
+	RecordSetTTL             int               `yaml:"recordSetTTL,omitempty"`
+	HostedZone               string            `yaml:"hostedZone,omitempty"`
+	HostedZoneID             string            `yaml:"hostedZoneId,omitempty"`
+	StackTags                map[string]string `yaml:"stackTags,omitempty"`
+	UseCalico                bool              `yaml:"useCalico,omitempty"`
+	Subnets                  []Subnet          `yaml:"subnets,omitempty"`
 }
 
 type Subnet struct {
-	AvailabilityZone string `yaml:"availabilityZone"`
-	InstanceCIDR     string `yaml:"instanceCIDR"`
+	AvailabilityZone string `yaml:"availabilityZone,omitempty"`
+	InstanceCIDR     string `yaml:"instanceCIDR,omitempty"`
 }
 
 const (
@@ -139,7 +142,7 @@ const (
 var supportedReleaseChannels = map[string]bool{
 	"alpha":  true,
 	"beta":   true,
-	"stable": false,
+	"stable": true,
 }
 
 func (c Cluster) Config() (*Config, error) {
@@ -389,16 +392,19 @@ func (c Cluster) valid() error {
 	}
 
 	if c.CreateRecordSet {
-		if c.HostedZone == "" {
-			return errors.New("hostedZone cannot be blank when createRecordSet is true")
+		if c.HostedZone == "" && c.HostedZoneID == "" {
+			return errors.New("hostedZone or hostedZoneID must be specified createRecordSet is true")
 		}
+		if c.HostedZone != "" && c.HostedZoneID != "" {
+			return errors.New("hostedZone and hostedZoneID cannot both be specified")
+		}
+
+		if c.HostedZone != "" {
+			fmt.Printf("Warning: the 'hostedZone' parameter is deprecated. Use 'hostedZoneId' instead\n")
+		}
+
 		if c.RecordSetTTL < 1 {
 			return errors.New("TTL must be at least 1 second")
-		}
-		if !isSubdomain(c.ExternalDNSName, c.HostedZone) {
-			return fmt.Errorf("%s is not a subdomain of %s",
-				c.ExternalDNSName,
-				c.HostedZone)
 		}
 	} else {
 		if c.RecordSetTTL != newDefaultCluster().RecordSetTTL {
@@ -564,10 +570,7 @@ func (c *Cluster) ValidateExistingVPC(existingVPCCIDR string, existingSubnetCIDR
 			)
 		}
 	}
-	_, instanceNet, err := net.ParseCIDR(c.InstanceCIDR)
-	if err != nil {
-		return fmt.Errorf("error parsing instances cidr %s : %v", c.InstanceCIDR, err)
-	}
+
 	_, vpcNet, err := net.ParseCIDR(c.VPCCIDR)
 	if err != nil {
 		return fmt.Errorf("error parsing vpc cidr %s: %v", c.VPCCIDR, err)
@@ -582,14 +585,23 @@ func (c *Cluster) ValidateExistingVPC(existingVPCCIDR string, existingSubnetCIDR
 		)
 	}
 
-	//Loop through all existing subnets in the VPC and look for conflicting CIDRS
-	for _, existingSubnet := range existingSubnets {
-		if cidrOverlap(instanceNet, existingSubnet) {
-			return fmt.Errorf(
-				"instance cidr (%s) conflicts with existing subnet cidr=%s",
-				instanceNet,
-				existingSubnet,
-			)
+	// Loop through all subnets
+	// Note: legacy instanceCIDR/availabilityZone stuff has already been marshalled into this format
+	for _, subnet := range c.Subnets {
+		_, instanceNet, err := net.ParseCIDR(subnet.InstanceCIDR)
+		if err != nil {
+			return fmt.Errorf("error parsing instances cidr %s : %v", c.InstanceCIDR, err)
+		}
+
+		//Loop through all existing subnets in the VPC and look for conflicting CIDRS
+		for _, existingSubnet := range existingSubnets {
+			if cidrOverlap(instanceNet, existingSubnet) {
+				return fmt.Errorf(
+					"instance cidr (%s) conflicts with existing subnet cidr=%s",
+					instanceNet,
+					existingSubnet,
+				)
+			}
 		}
 	}
 
@@ -627,23 +639,14 @@ func WithTrailingDot(s string) string {
 	return s
 }
 
-func isSubdomain(sub, parent string) bool {
-	sub, parent = WithTrailingDot(sub), WithTrailingDot(parent)
-	subParts, parentParts := strings.Split(sub, "."), strings.Split(parent, ".")
+const hostedZoneIDPrefix = "/hostedzone/"
 
-	if len(parentParts) > len(subParts) {
-		return false
+func withHostedZoneIDPrefix(id string) string {
+	if id == "" {
+		return ""
 	}
-
-	subSuffixes := subParts[len(subParts)-len(parentParts):]
-
-	if len(subSuffixes) != len(parentParts) {
-		return false
+	if !strings.HasPrefix(id, hostedZoneIDPrefix) {
+		return fmt.Sprintf("%s%s", hostedZoneIDPrefix, id)
 	}
-	for i := range subSuffixes {
-		if subSuffixes[i] != parentParts[i] {
-			return false
-		}
-	}
-	return true
+	return id
 }

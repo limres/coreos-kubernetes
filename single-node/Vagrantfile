@@ -15,7 +15,7 @@ USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
 INSECURE_REGISTRY = "lcr.lh"
 
-if (/cygwin/ =~ RUBY_PLATFORM) != nil
+if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
   system("\"C:\\cygwin64\\bin\\bash.exe\" -c \"mkdir -p ssl && ./../lib/init-ssl-ca ssl\"") or abort ("failed generating SSL CA artifacts")
   system("\"C:\\cygwin64\\bin\\bash.exe\" -c \"./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}\"") or abort ("failed generating SSL certificate artifacts")
   system("\"C:\\cygwin64\\bin\\bash.exe\" -c \"./../lib/init-ssl ssl admin kube-admin\"") or abort("failed generating admin SSL artifacts")

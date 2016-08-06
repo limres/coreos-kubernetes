@@ -25,7 +25,6 @@ else
   system("./../lib/init-ssl ssl admin kube-admin") or abort("failed generating admin SSL artifacts")
 end
 
-
 Vagrant.configure("2") do |config|
   # always use Vagrant's insecure key
   config.ssh.insert_key = false

@@ -15,26 +15,7 @@ USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
 INSECURE_REGISTRY = "lcr.lh"
 
-# Detect OS
-module OS
-  def OS.windows?
-    (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
-  end
-
-  def OS.mac?
-   (/darwin/ =~ RUBY_PLATFORM) != nil
-  end
-
-  def OS.unix?
-    !OS.windows?
-  end
-
-  def OS.linux?
-    OS.unix? and not OS.mac?
-  end
-end
-
-if OS.windows?
+if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
   system("\"C:\\cygwin64\\bin\\bash.exe\" -c \"mkdir -p ssl && ./../lib/init-ssl-ca ssl\"") or abort ("failed generating SSL CA artifacts")
   system("\"C:\\cygwin64\\bin\\bash.exe\" -c \"./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}\"") or abort ("failed generating SSL certificate artifacts")
   system("\"C:\\cygwin64\\bin\\bash.exe\" -c \"./../lib/init-ssl ssl admin kube-admin\"") or abort("failed generating admin SSL artifacts")
@@ -80,12 +61,6 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.network :private_network, ip: NODE_IP
-
-  rsync_folders = YAML.load_file './folders.yaml'
-
-  rsync_folders.each do |folder|
-    config.vm.synced_folder folder["path"], folder["hostPath"], type: "rsync", rsync__exclude: folder["exclude"], rsync__verbose: folder["verbose"]
-  end
 
   config.vm.provision :file, :source => SSL_TARBALL_PATH, :destination => "/tmp/ssl.tar"
   config.vm.provision :shell, :inline => "mkdir -p /etc/kubernetes/ssl && tar -C /etc/kubernetes/ssl -xf /tmp/ssl.tar", :privileged => true

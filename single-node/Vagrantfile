@@ -71,7 +71,7 @@ Vagrant.configure("2") do |config|
 
   # add insecure registry for local container registry
   config.vm.provision :shell, :inline => "sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/", :privileged => true
-  config.vm.provision :shell, :inline => "sudo sed -e $\"/^ExecStart/ s/$/ --insecure-registry #{CLUSTER_IP}/\" -i /etc/systemd/system/docker.service", :privileged => true
+  config.vm.provision :shell, :inline => "sudo sed -e $\"/^ExecStart/ s/$/ --insecure-registry #{INSECURE_REGISTRY}/\" -i /etc/systemd/system/docker.service", :privileged => true
   config.vm.provision :shell, :inline => "sudo systemctl daemon-reload", :privileged => true
   config.vm.provision :shell, :inline => "sudo systemctl restart docker", :privileged => true
 end

@@ -15,7 +15,7 @@ For example, modifying the `KUBELET_VERSION` environment variable in the followi
 **/etc/systemd/system/kubelet.service**
 
 ```
-Environment=KUBELET_VERSION=v1.2.4_coreos.1
+Environment=KUBELET_VERSION=v1.3.4_coreos.0
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --api-servers=https://master [...]
 ```
@@ -28,6 +28,7 @@ To update the image version, change the image tag in the service file (`/etc/sys
 
 
 **/etc/systemd/system/calico-node.service**
+
 ```
 ExecStart=/usr/bin/rkt run --inherit-env --stage1-from-dir=stage1-fly.aci \
 --volume=modules,kind=host,source=/lib/modules,readOnly=false \
@@ -43,7 +44,7 @@ Master nodes consist of the following Kubernetes components:
 * kube-apiserver
 * kube-controller-manager
 * kube-scheduler
-* policy-agent
+* policy-controller
 
 While upgrading the master components, user pods on worker nodes will continue to run normally.
 
@@ -54,6 +55,7 @@ The master node components (kube-controller-manager,kube-scheduler, kube-apiserv
 For example, to upgrade the kube-apiserver version you could update the pod image tag in `/etc/kubernetes/manifests/kube-apiserver.yaml`:
 
 From: `image: quay.io/coreos/hyperkube:v1.0.6_coreos.0`
+
 To: `image: quay.io/coreos/hyperkube:v1.0.7_coreos.0`
 
 In high-availability deployments, the control-plane components (apiserver, scheduler, and controller-manager) are deployed to all master nodes. Upgrades of these components will require them being updated on each master node.

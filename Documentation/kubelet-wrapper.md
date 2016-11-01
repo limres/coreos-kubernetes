@@ -19,10 +19,10 @@ An example systemd kubelet.service file which takes advantage of the kubelet-wra
 
 ```ini
 [Service]
-Environment=KUBELET_VERSION=v1.3.4_coreos.0
+Environment=KUBELET_VERSION=v1.4.3_coreos.0
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --api-servers=http://127.0.0.1:8080 \
-  --config=/etc/kubernetes/manifests
+  --pod-manifest-path=/etc/kubernetes/manifests
 ```
 
 In the example above we set the `KUBELET_VERSION` and the kubelet-wrapper script takes care of running the correct container image with our desired API server address and manifest location.
@@ -38,10 +38,10 @@ Mount the host's `/etc/resolv.conf` file directly into the container in order to
 ```ini
 [Service]
 Environment="RKT_OPTS=--volume=resolv,kind=host,source=/etc/resolv.conf --mount volume=resolv,target=/etc/resolv.conf"
-Environment=KUBELET_VERSION=v1.3.4_coreos.0
+Environment=KUBELET_VERSION=v1.4.3_coreos.0
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --api-servers=http://127.0.0.1:8080 \
-  --config=/etc/kubernetes/manifests
+  --pod-manifest-path=/etc/kubernetes/manifests
   ...other flags...
 ```
 
@@ -52,27 +52,28 @@ Pods running in your cluster can reference remote storage volumes located on an 
 ```ini
 [Service]
 Environment="RKT_OPTS=--volume iscsiadm,kind=host,source=/usr/sbin/iscsiadm --mount volume=iscsiadm,target=/usr/sbin/iscsiadm"
-Environment=KUBELET_VERSION=v1.3.4_coreos.0
+Environment=KUBELET_VERSION=v1.4.3_coreos.0
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --api-servers=http://127.0.0.1:8080 \
-  --config=/etc/kubernetes/manifests
+  --pod-manifest-path=/etc/kubernetes/manifests
   ...other flags...
 ```
 
-### Use the cluster logging add-on
+### Allow pods to use rbd volumes
 
-Export the logs collected by the kubelet via a volume mount, so that [other logging applications][addon-logging] can consume it. In addition to setting `RKT_OPTS`, an `ExecStartPre` is included to create the log directory.
+Pods using the [rbd volume plugin][rbd-example] to consume data from ceph must ensure that the kubelet has access to modprobe. Add the following options to the `RKT_OPTS` env before launching the kubelet via kubelet-wrapper:
 
 ```ini
 [Service]
-Environment="RKT_OPTS=--volume var-log,kind=host,source=/var/log --mount volume=var-log,target=/var/log"
-Environment=KUBELET_VERSION=v1.3.4_coreos.0
-ExecStartPre=/usr/bin/mkdir -p /var/log/containers
-ExecStart=/usr/lib/coreos/kubelet-wrapper \
-  --api-servers=http://127.0.0.1:8080 \
-  --config=/etc/kubernetes/manifests
-  ...other flags...
+Environment="RKT_OPTS=--volume modprobe,kind=host,source=/usr/sbin/modprobe \
+--mount volume=modprobe,target=/usr/sbin/modprobe \
+--volume lib-modules,kind=host,source=/lib/modules \
+--mount volume=lib-modules,target=/lib/modules \
+Environment=KUBELET_VERSION=v1.4.3_coreos.0
+...
 ```
+
+Note that the kubelet also requires access to the userspace `rbd` tool that is included only in hyperkube images tagged `v1.3.6_coreos.0` or later.
 
 ## Manual deployment
 
@@ -87,12 +88,12 @@ For example:
 
 ```ini
 [Service]
-Environment=KUBELET_VERSION=v1.3.4_coreos.0
+Environment=KUBELET_VERSION=v1.4.3_coreos.0
 ExecStart=/opt/bin/kubelet-wrapper \
   --api-servers=http://127.0.0.1:8080 \
-  --config=/etc/kubernetes/manifests
+  --pod-manifest-path=/etc/kubernetes/manifests
 ```
 
 [#2141]: https://github.com/coreos/rkt/issues/2141
 [kubelet-wrapper]: https://github.com/coreos/coreos-overlay/blob/master/app-admin/kubelet-wrapper/files/kubelet-wrapper
-[addon-logging]: https://github.com/kubernetes/kubernetes/tree/release-1.2/cluster/addons/fluentd-elasticsearch
+[rbd-example]: https://github.com/kubernetes/kubernetes/tree/master/examples/volumes/rbd

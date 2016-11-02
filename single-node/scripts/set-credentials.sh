@@ -2,7 +2,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 kubectl config set-cluster vagrant-single-cluster \
-  --server=https://172.18.0.101:8443 \
+  --server=https://172.17.4.99:8443 \
   --certificate-authority=$DIR/../ssl/ca.pem
 
 kubectl config set-credentials vagrant-single-admin \

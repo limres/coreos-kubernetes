@@ -272,7 +272,7 @@ spec:
     - --etcd-servers=${ETCD_ENDPOINTS}
     - --allow-privileged=true
     - --service-cluster-ip-range=${SERVICE_IP_RANGE}
-    - --secure-port=443
+    - --secure-port=8443
     - --advertise-address=${ADVERTISE_IP}
     - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
     - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
@@ -288,8 +288,8 @@ spec:
       initialDelaySeconds: 15
       timeoutSeconds: 15
     ports:
-    - containerPort: 443
-      hostPort: 443
+    - containerPort: 8443
+      hostPort: 8443
       name: https
     - containerPort: 8080
       hostPort: 8080
@@ -666,17 +666,17 @@ EOF
         cat << EOF > $TEMPLATE
 kind: Service
 apiVersion: v1
-metadata: 
+metadata:
   name: heapster
   namespace: kube-system
-  labels: 
+  labels:
     kubernetes.io/cluster-service: "true"
     kubernetes.io/name: "Heapster"
-spec: 
-  ports: 
+spec:
+  ports:
     - port: 80
       targetPort: 8082
-  selector: 
+  selector:
     k8s-app: heapster
 EOF
     fi

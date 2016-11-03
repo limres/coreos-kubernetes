@@ -16,7 +16,7 @@ NODE_CPUS = 4
 NODE_MEMORY_SIZE = 4096
 USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
-INSECURE_REGISTRY = "lcr.lh"
+INSECURE_REGISTRY = "docker.k8s"
 
 system("mkdir -p ssl && ./../lib/init-ssl-ca ssl") or abort ("failed generating SSL CA artifacts")
 system("./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}") or abort ("failed generating SSL certificate artifacts")

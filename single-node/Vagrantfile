@@ -12,8 +12,8 @@ $update_channel = "alpha"
 
 CLUSTER_IP="10.3.0.1"
 NODE_IP = "172.17.4.99"
-NODE_CPUS = 2
-NODE_MEMORY_SIZE = 2048
+NODE_CPUS = 4
+NODE_MEMORY_SIZE = 4096
 USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
 INSECURE_REGISTRY = "lcr.lh"

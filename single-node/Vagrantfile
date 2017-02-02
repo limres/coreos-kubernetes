@@ -16,11 +16,14 @@ NODE_CPUS = 4
 NODE_MEMORY_SIZE = 4096
 USER_DATA_PATH = File.expand_path("user-data")
 SSL_TARBALL_PATH = File.expand_path("ssl/controller.tar")
-INSECURE_REGISTRY = "docker.k8s"
 
 system("mkdir -p ssl && ./../lib/init-ssl-ca ssl") or abort ("failed generating SSL CA artifacts")
 system("./../lib/init-ssl ssl apiserver controller IP.1=#{NODE_IP},IP.2=#{CLUSTER_IP}") or abort ("failed generating SSL certificate artifacts")
 system("./../lib/init-ssl ssl admin kube-admin") or abort("failed generating admin SSL artifacts")
+
+# support for insecure container registry registry
+system("./scripts/docker-setup.sh")
+system("./scripts/install-credentials.sh")
 
 Vagrant.configure("2") do |config|
   # always use Vagrant's insecure key
@@ -66,7 +69,7 @@ Vagrant.configure("2") do |config|
 
   # support for insecure container registry registry
   config.vm.provision :shell, :inline => "sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/", :privileged => true
-  config.vm.provision :shell, :inline => "sudo sed -e $\"/^ExecStart/ s/$/ --insecure-registry #{INSECURE_REGISTRY}/\" -i /etc/systemd/system/docker.service", :privileged => true
+  config.vm.provision :shell, :inline => "sudo sed -e $'/^ExecStart/ s/$/ --insecure-registry docker.k8s/' -i /etc/systemd/system/docker.service", :privileged => true
   config.vm.provision :shell, :inline => "sudo systemctl daemon-reload", :privileged => true
   config.vm.provision :shell, :inline => "sudo systemctl restart docker", :privileged => true
 end

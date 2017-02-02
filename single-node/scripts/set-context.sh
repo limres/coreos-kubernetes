@@ -1,7 +1,6 @@
 #!/bin/bash
-K8S_NAMESPACE="default"
-K8S_CONTEXT=$(kubectl config view | grep current-context | awk '{print $2}')
+K8S_NAMESPACE=${1:="default"}
 
-kubectl config set-context $K8S_CONTEXT --namespace=$K8S_NAMESPACE
+kubectl config set-context vagrant-single --namespace=$K8S_NAMESPACE
 
-echo "default namespace is now \"$K8S_NAMESPACE\"";
+echo "namespace \"$K8S_NAMESPACE\" set";

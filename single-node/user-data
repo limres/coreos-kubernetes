@@ -832,6 +832,15 @@ EOF
 }
 EOF
     fi
+
+    local TEMPLATE=/etc/exports
+    if [ ! -f $TEMPLATE ]; then
+        echo "TEMPLATE: $TEMPLATE"
+        mkdir -p $(dirname $TEMPLATE)
+        cat << EOF > $TEMPLATE
+/host 172.17.4.1(rw,insecure,sync,no_subtree_check,no_root_squash)
+EOF
+    fi
 }
 
 function start_addons {
@@ -865,6 +874,10 @@ function enable_calico_policy {
 
 init_config
 init_templates
+
+mkdir -p /host
+systemctl enable nfsd; systemctl start nfsd
+
 systemctl enable etcd2; systemctl start etcd2
 
 chmod +x /opt/bin/host-rkt
